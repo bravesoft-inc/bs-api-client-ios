@@ -9,9 +9,9 @@ import Foundation
 import Combine
 
 @available(iOS 13.0.0, *)
-public actor BSApiClientPublisher {
+public class BSApiClientPublisher {
     private let decoder: JSONDecoder
-    private let waitTime: Int
+    public let waitTime: Int
     
     public init(decoder: JSONDecoder = .default, waitTime: Int = 20) {
         self.decoder = decoder
@@ -26,8 +26,10 @@ public actor BSApiClientPublisher {
         return session.dataTaskPublisher(for: urlRequest)
             .subscribe(on: DispatchQueue.global())
             .mapError { error -> BSNetworkError in
-                guard !error.isNetworkError else { return .collectionLost }
-
+                guard !error.isNetworkError else {
+                    return .collectionLost
+                }
+                
                 return .unknown()
             }
             .flatMap { output -> AnyPublisher<BSResponse<T>, BSNetworkError> in
