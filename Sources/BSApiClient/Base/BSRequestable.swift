@@ -35,7 +35,7 @@ public protocol BSRequestable {
 }
 
 extension BSRequestable {
-    var urlRequst: URLRequest? {
+    public var urlRequst: URLRequest? {
         guard let url = url else { return nil }
         
         var request = URLRequest(url: url)

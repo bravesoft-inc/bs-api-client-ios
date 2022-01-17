@@ -8,6 +8,6 @@
 import Foundation
 
 public struct BSResponse<Content: Codable> {
-    var code: Int?
-    var body: Content?
+    public var code: Int?
+    public var body: Content?
 }
