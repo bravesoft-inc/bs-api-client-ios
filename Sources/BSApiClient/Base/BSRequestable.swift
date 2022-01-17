@@ -23,6 +23,7 @@ public enum BSRequestBodyType {
 public typealias BSRequestHeaders = [String: String]
 public typealias BSRequestParameters = [String: Any]
 
+// MARK: - BSRequestable
 public protocol BSRequestable {
     var baseURL: String { get }
     var path: String { get }
@@ -31,10 +32,7 @@ public protocol BSRequestable {
     var headers: BSRequestHeaders? { get set }
     var parameters: BSRequestParameters? { get }
     var authorization: Bool { get }
-    
     var urlRequst: URLRequest? { get }
-    
-    mutating func updateAuthorizationKey()
 }
 
 extension BSRequestable {
@@ -98,6 +96,4 @@ extension BSRequestable {
                 .data(using: .utf8)
         }
     }
-    
-    mutating func updateAuthorizationKey() {}
 }
