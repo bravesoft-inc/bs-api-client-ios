@@ -51,7 +51,7 @@ extension BSRequestable {
             return nil
         }
         
-        urlComponents.path += path
+        urlComponents.path += "\(path).json"
         
         guard let url = urlComponents.url else {
             return nil
