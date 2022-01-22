@@ -53,7 +53,11 @@ extension BSRequestable {
         
         urlComponents.path += path
         
-        var request = URLRequest(url: urlComponents.url)
+        guard let url = urlComponents.url else {
+            return nil
+        }
+        
+        var request = URLRequest(url: url)
         request.httpMethod = BSRequestMethod.get.rawValue
         
         return request
