@@ -49,7 +49,7 @@ extension BSRequestable {
     public var mockModeURLRequest: URLRequest? {
         guard let url = url else { return nil }
         var request = URLRequest(url: url)
-        request.httpMethod = BSRequestMethod.get
+        request.httpMethod = BSRequestMethod.get.rawValue
         return request
     }
     
