@@ -47,9 +47,15 @@ extension BSRequestable {
     }
     
     public var mockModeURLRequest: URLRequest? {
-        guard let url = url else { return nil }
-        var request = URLRequest(url: url)
+        guard var urlComponents = URLComponents(string: baseURL) else {
+            return nil
+        }
+        
+        urlComponents.path += path
+        
+        var request = URLRequest(url: urlComponents.url)
         request.httpMethod = BSRequestMethod.get.rawValue
+        
         return request
     }
     

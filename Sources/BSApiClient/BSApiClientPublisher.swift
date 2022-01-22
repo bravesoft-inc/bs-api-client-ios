@@ -12,13 +12,13 @@ import Combine
 public class BSApiClientPublisher {
     private let decoder: JSONDecoder
     public let waitTime: Int
-    
     // AWSに設置したjsonを読み取るモード
-    public var mockMode: Bool = false
+    public var mockMode: Bool
     
-    public init(decoder: JSONDecoder = .default, waitTime: Int = 20) {
+    public init(decoder: JSONDecoder = .default, waitTime: Int = 20, isMockMode: Bool = false) {
         self.decoder = decoder
         self.waitTime = waitTime
+        self.mockMode = isMockMode
     }
     
     public func fetch<T: Codable>(_ request: BSRequestable, session: URLSession = .shared) -> AnyPublisher<BSResponse<T>, BSNetworkError> {
