@@ -13,13 +13,23 @@ public class BSApiClientPublisher {
     private let decoder: JSONDecoder
     public let waitTime: Int
     
+    // AWSに設置したjsonを読み取るモード
+    var mockMode: Bool = false
+    
     public init(decoder: JSONDecoder = .default, waitTime: Int = 20) {
         self.decoder = decoder
         self.waitTime = waitTime
     }
     
     public func fetch<T: Codable>(_ request: BSRequestable, session: URLSession = .shared) -> AnyPublisher<BSResponse<T>, BSNetworkError> {
-        guard let urlRequest = request.urlRequst else {
+        let urlRequest: URLRequest?
+        if mockMode {
+            urlRequest = request.mockModeURLRequest
+        } else {
+            urlRequest = request.urlRequst
+        }
+        
+        guard let urlRequest = urlRequest else {
             return Fail(error: BSNetworkError.invalidRequest).eraseToAnyPublisher()
         }
         
