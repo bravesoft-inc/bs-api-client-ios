@@ -55,6 +55,7 @@ public class BSApiClientPublisher {
                             let body = try self.decoder.decode(T.self, from: output.data)
                             $0(.success(BSResponse(code: statusCode, body: body)))
                         } catch {
+                            print(error)
                             $0(.failure(.parseError(error.localizedDescription)))
                         }
                     }.eraseToAnyPublisher()
