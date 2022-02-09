@@ -28,10 +28,12 @@ public class BSApiClient {
             
             URLSession.shared.dataTask(with: request) { _, response, error in
                 if let error = error {
+                    print("[BSApiClient] \(error.localizedDescription)")
                     return continuation.resume(throwing: error)
                 }
                 
                 guard let response = response else {
+                    print("[BSApiClient] invalid response.")
                     return continuation.resume(throwing: BSNetworkError.invalidResponse)
                 }
 
