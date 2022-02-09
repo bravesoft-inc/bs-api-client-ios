@@ -38,6 +38,7 @@ public class BSApiClient {
                 let contentLength: Int64 = response.expectedContentLength ?? NSURLSessionTransferSizeUnknown
                 return continuation.resume(returning: Int(contentLength))
             }
+            .resume()
         }
     }
 }
