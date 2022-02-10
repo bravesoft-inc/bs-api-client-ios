@@ -33,6 +33,7 @@ public protocol BSRequestable {
     var headers: BSRequestHeaders? { get set }
     var parameters: BSRequestParameters? { get }
     var authorization: Bool { get }
+    mutating func updateHeaders(_ headers: BSRequestHeaders)
 }
 
 extension BSRequestable {
@@ -112,5 +113,9 @@ extension BSRequestable {
                 .joined(separator: "&")
                 .data(using: .utf8)
         }
+    }
+    
+    mutating func updateHeaders(_ headers: BSRequestHeaders) {
+        self.headers = headers
     }
 }
