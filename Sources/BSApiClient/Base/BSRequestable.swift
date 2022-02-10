@@ -30,7 +30,7 @@ public protocol BSRequestable {
     var path: String { get }
     var method: BSRequestMethod { get }
     var bodyType: BSRequestBodyType { get }
-    var headers: BSRequestHeaders? { get }
+    var headers: BSRequestHeaders? { get set }
     var parameters: BSRequestParameters? { get }
     var authorization: Bool { get }
 }
