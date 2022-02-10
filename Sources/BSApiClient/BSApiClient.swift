@@ -7,16 +7,71 @@
 
 import Foundation
 
+@available(iOS 13.0, *)
 public class BSApiClient {
     private let decoder: JSONDecoder
     public let waitTime: Int
+    // AWSに設置したjsonを読み取るモード
+    public var mockMode: Bool
     
-    public init(decoder: JSONDecoder = .default, waitTime: Int = 20) {
+    public init(decoder: JSONDecoder = .default, waitTime: Int = 20, isMockMode: Bool = false) {
         self.decoder = decoder
         self.waitTime = waitTime
+        self.mockMode = isMockMode
+    }
+
+    public func fetch<T: Codable>(_ request: BSRequestable, session: URLSession = .shared) async throws -> BSResponse<T> {
+        try await withCheckedThrowingContinuation { continuation in
+            guard var urlRequest = mockMode ? request.mockModeURLRequest : request.urlRequst else {
+                return continuation.resume(throwing: BSNetworkError.invalidRequest)
+            }
+            
+            urlRequest.timeoutInterval = TimeInterval(waitTime)
+            
+            session.dataTask(with: urlRequest) { data, response, error in
+                if let error = error as NSError? {
+                    if error.domain == NSURLErrorDomain, error.code == NSURLErrorTimedOut {
+                        return continuation.resume(throwing: BSNetworkError.client(.requestTimeout, message: nil))
+                    } else if error.code == NSURLErrorNotConnectedToInternet || error.code == NSURLErrorDataNotAllowed {
+                        return continuation.resume(throwing: BSNetworkError.collectionLost)
+                    } else {
+                        return continuation.resume(throwing: BSNetworkError.unknown(message: error.localizedDescription))
+                    }
+                }
+                
+                guard let data = data, let response = response as? HTTPURLResponse else {
+                    return continuation.resume(throwing: BSNetworkError.invalidResponse)
+                }
+
+                let statusCode: Int = response.statusCode
+                switch response.statusCode {
+                case 200...299:
+                    do {
+                        let body = try self.decoder.decode(T.self, from: data)
+                        continuation.resume(returning: BSResponse(code: statusCode, body: body))
+                    } catch {
+                        continuation.resume(throwing: BSNetworkError.parseError(error.localizedDescription))
+                    }
+                case 400...499:
+                    guard let clientError = BSNetworkError.ClientError(rawValue: statusCode) else {
+                        return continuation.resume(throwing: BSNetworkError.unknown(message: "\(statusCode)"))
+                    }
+                    
+                    return continuation.resume(throwing: BSNetworkError.client(clientError))
+                case 500...599:
+                    guard let serverError = BSNetworkError.ServerError(rawValue: statusCode) else {
+                        return continuation.resume(throwing: BSNetworkError.unknown(message: "\(statusCode)"))
+                    }
+                    
+                    return continuation.resume(throwing: BSNetworkError.server(serverError))
+                default:
+                    return continuation.resume(throwing: BSNetworkError.unknown(message: "\(statusCode)"))
+                }
+            }
+            .resume()
+        }
     }
     
-    @available(iOS 13.0, *)
     public func getFileSize(fileURL: URL) async throws -> Int {
         try await withCheckedThrowingContinuation { continuation in
             var request = URLRequest(
