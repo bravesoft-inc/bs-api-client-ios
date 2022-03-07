@@ -10,9 +10,9 @@ import Foundation
 public enum BSNetworkError: Error {
     case invalidResponse
     case invalidRequest
-    case client(ClientError, message: String? = nil)
-    case server(ServerError, message: String? = nil)
-    case parseError(String? = nil)
+    case client(ClientError, data: Data?)
+    case server(ServerError, data: Data?)
+    case parseError(error: Error)
     case collectionLost
     case unknown(message: String? = nil)
 }

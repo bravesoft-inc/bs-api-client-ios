@@ -9,6 +9,8 @@ import Foundation
 import BSApiClient
 
 enum JokeRequest: BSRequestable {
+    
+    
     case getJoke
     
     var baseURL: String {
@@ -34,7 +36,10 @@ enum JokeRequest: BSRequestable {
     }
     
     var headers: BSRequestHeaders? {
-        return ["Accept": "application/json"]
+        get {
+            ["Accept": "application/json"]
+        }
+        set { _ = newValue }
     }
     
     var parameters: BSRequestParameters? {
@@ -46,5 +51,9 @@ enum JokeRequest: BSRequestable {
     
     var authorization: Bool {
         return false
+    }
+    
+    mutating func updateHeaders(_ headers: BSRequestHeaders) {
+        self.headers = headers
     }
 }

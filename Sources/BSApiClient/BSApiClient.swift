@@ -31,7 +31,7 @@ public class BSApiClient {
             session.dataTask(with: urlRequest) { data, response, error in
                 if let error = error as NSError? {
                     if error.domain == NSURLErrorDomain, error.code == NSURLErrorTimedOut {
-                        return continuation.resume(throwing: BSNetworkError.client(.requestTimeout, message: nil))
+                        return continuation.resume(throwing: BSNetworkError.client(.requestTimeout, data: nil))
                     } else if error.code == NSURLErrorNotConnectedToInternet || error.code == NSURLErrorDataNotAllowed {
                         return continuation.resume(throwing: BSNetworkError.collectionLost)
                     } else {
@@ -50,20 +50,20 @@ public class BSApiClient {
                         let body = try self.decoder.decode(T.self, from: data)
                         continuation.resume(returning: BSResponse(code: statusCode, body: body))
                     } catch {
-                        continuation.resume(throwing: BSNetworkError.parseError(error.localizedDescription))
+                        continuation.resume(throwing: BSNetworkError.parseError(error: error))
                     }
                 case 400...499:
                     guard let clientError = BSNetworkError.ClientError(rawValue: statusCode) else {
                         return continuation.resume(throwing: BSNetworkError.unknown(message: "\(statusCode)"))
                     }
                     
-                    return continuation.resume(throwing: BSNetworkError.client(clientError))
+                    return continuation.resume(throwing: BSNetworkError.client(clientError, data: data))
                 case 500...599:
                     guard let serverError = BSNetworkError.ServerError(rawValue: statusCode) else {
                         return continuation.resume(throwing: BSNetworkError.unknown(message: "\(statusCode)"))
                     }
                     
-                    return continuation.resume(throwing: BSNetworkError.server(serverError))
+                    return continuation.resume(throwing: BSNetworkError.server(serverError, data: data))
                 default:
                     return continuation.resume(throwing: BSNetworkError.unknown(message: "\(statusCode)"))
                 }

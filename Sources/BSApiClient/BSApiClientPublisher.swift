@@ -56,7 +56,7 @@ public class BSApiClientPublisher {
                             $0(.success(BSResponse(code: statusCode, body: body)))
                         } catch {
                             print(error)
-                            $0(.failure(.parseError(error.localizedDescription)))
+                            $0(.failure(.parseError(error: error)))
                         }
                     }.eraseToAnyPublisher()
                 case 400...499:
@@ -64,19 +64,19 @@ public class BSApiClientPublisher {
                         return Fail(error: .unknown(message: "\(statusCode)")).eraseToAnyPublisher()
                     }
                     
-                    return Fail(error: .client(clientError)).eraseToAnyPublisher()
+                    return Fail(error: .client(clientError, data: output.data)).eraseToAnyPublisher()
                 case 500...599:
                     guard let serverError = BSNetworkError.ServerError(rawValue: statusCode) else {
                         return Fail(error: .unknown(message: "\(statusCode)")).eraseToAnyPublisher()
                     }
                     
-                    return Fail(error: .server(serverError)).eraseToAnyPublisher()
+                    return Fail(error: .server(serverError, data: output.data)).eraseToAnyPublisher()
                 default:
                     return Fail(error: .unknown(message: "\(statusCode)")).eraseToAnyPublisher()
                 }
             }
             .timeout(.seconds(waitTime), scheduler: DispatchQueue.main, options: nil) {
-                return .client(.requestTimeout, message: nil)
+                return .client(.requestTimeout, data: nil)
             }
             .eraseToAnyPublisher()
     }
