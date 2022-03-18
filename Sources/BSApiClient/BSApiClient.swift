@@ -52,6 +52,12 @@ public class BSApiClient {
                     } catch {
                         continuation.resume(throwing: BSNetworkError.parseError(error: error))
                     }
+                case 300...399:
+                    guard let transferError = BSNetworkError.TransferError(rawValue: statusCode) else {
+                        return continuation.resume(throwing: BSNetworkError.unknown(message: "\(statusCode)"))
+                    }
+
+                    return continuation.resume(throwing: BSNetworkError.transfer(transferError, data: data))
                 case 400...499:
                     guard let clientError = BSNetworkError.ClientError(rawValue: statusCode) else {
                         return continuation.resume(throwing: BSNetworkError.unknown(message: "\(statusCode)"))
