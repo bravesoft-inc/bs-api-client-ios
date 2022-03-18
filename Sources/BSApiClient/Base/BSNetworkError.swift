@@ -12,6 +12,7 @@ public enum BSNetworkError: Error {
     case invalidRequest
     case client(ClientError, data: Data?)
     case server(ServerError, data: Data?)
+    case transfer(TransferError, data: Data?)
     case parseError(error: Error)
     case collectionLost
     case unknown(message: String? = nil)
@@ -58,5 +59,18 @@ extension BSNetworkError {
         case variantAlsoNegotiates = 506
         case notExtended = 510
         case networkAuthenticationRequired = 511
+    }
+}
+
+// MARK: - TransfoerErrors
+extension BSNetworkError {
+    public enum TransferError: Int, Error {
+        case multipleChoices = 300
+        case movedParmanently = 301
+        case movedTemporarily = 302
+        case seeOther = 303
+        case notModified = 304
+        case useProxy = 305
+        case temporaryRedirect = 307
     }
 }
