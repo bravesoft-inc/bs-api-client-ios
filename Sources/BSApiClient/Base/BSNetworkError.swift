@@ -65,6 +65,12 @@ extension BSNetworkError {
 // MARK: - TransfoerErrors
 extension BSNetworkError {
     public enum TransferError: Int, Error {
+        case multipleChoices = 300
         case movedParmanently = 301
+        case movedTemporarily = 302
+        case seeOther = 303
+        case notModified = 304
+        case useProxy = 305
+        case temporaryRedirect = 307
     }
 }
