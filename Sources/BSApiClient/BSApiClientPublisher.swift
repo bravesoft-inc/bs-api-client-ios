@@ -59,6 +59,12 @@ public class BSApiClientPublisher {
                             $0(.failure(.parseError(error: error)))
                         }
                     }.eraseToAnyPublisher()
+                case 300...399:
+                    guard let transferError = BSNetworkError.TransferError(rawValue: statusCode) else {
+                        return Fail(error: .unknown(message: "\(statusCode)")).eraseToAnyPublisher()
+                    }
+
+                    return Fail(error: .transfer(transferError, data: output.data)).eraseToAnyPublisher()
                 case 400...499:
                     guard let clientError = BSNetworkError.ClientError(rawValue: statusCode) else {
                         return Fail(error: .unknown(message: "\(statusCode)")).eraseToAnyPublisher()
