@@ -52,7 +52,12 @@ public class BSApiClientPublisher {
                 case 200...299:
                     return Future<BSResponse<T>, BSNetworkError> {
                         do {
-                            let body = try self.decoder.decode(T.self, from: output.data)
+                            var body: T? = nil
+
+                            if !output.data.isEmpty {
+                                body = try self.decoder.decode(T.self, from: output.data)
+                            }
+                            
                             $0(.success(BSResponse(code: statusCode, body: body)))
                         } catch {
                             print(error)
