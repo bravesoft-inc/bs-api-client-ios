@@ -47,7 +47,12 @@ public class BSApiClient {
                 switch response.statusCode {
                 case 200...299:
                     do {
-                        let body = try self.decoder.decode(T.self, from: data)
+                        var body: T? = nil
+
+                        if !data.isEmpty {
+                            body = try self.decoder.decode(T.self, from: data)
+                        }
+                        
                         continuation.resume(returning: BSResponse(code: statusCode, body: body))
                     } catch {
                         continuation.resume(throwing: BSNetworkError.parseError(error: error))
