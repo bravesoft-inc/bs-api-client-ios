@@ -12,7 +12,6 @@ import Combine
 public class BSApiClientPublisher {
     private let decoder: JSONDecoder
     public let waitTime: Int
-    // AWSに設置したjsonを読み取るモード
     public var mockMode: Bool
     
     public init(decoder: JSONDecoder = .default, waitTime: Int = 20, isMockMode: Bool = false) {
