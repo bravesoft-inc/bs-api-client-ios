@@ -20,7 +20,7 @@ public class BSApiClient {
     }
 
     public func fetch<T: Codable>(_ request: BSRequestable, session: URLSession = .shared) async throws -> BSResponse<T> {
-        try await withCheckedThrowingContinuation { [weak self] continuation in
+        try await withCheckedThrowingContinuation { continuation in
             guard var urlRequest = mockMode ? request.mockModeURLRequest : request.urlRequst else {
                 return continuation.resume(throwing: BSNetworkError.invalidRequest)
             }
