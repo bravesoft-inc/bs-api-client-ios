@@ -8,7 +8,7 @@
 import Foundation
 
 @available(iOS 13.0, *)
-public actor BSApiClient {
+public class BSApiClient {
     private let decoder: JSONDecoder
     public let waitTime: Int
     public var mockMode: Bool
@@ -20,21 +20,22 @@ public actor BSApiClient {
     }
 
     public func fetch<T: Codable>(_ request: BSRequestable, session: URLSession = .shared) async throws -> BSResponse<T> {
-        return try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { continuation in
             guard var urlRequest = mockMode ? request.mockModeURLRequest : request.urlRequst else {
                 return continuation.resume(throwing: BSNetworkError.invalidRequest)
             }
             
             urlRequest.timeoutInterval = TimeInterval(waitTime)
             
-            session.dataTask(with: urlRequest) { data, response, error in
+            session.dataTask(with: urlRequest) { [weak self] data, response, error in
+                guard let self = self else { return }
                 if let error = error as NSError? {
                     if error.domain == NSURLErrorDomain, error.code == NSURLErrorTimedOut {
-                        continuation.resume(throwing: BSNetworkError.client(.requestTimeout, data: nil))
+                        return continuation.resume(throwing: BSNetworkError.client(.requestTimeout, data: nil))
                     } else if error.code == NSURLErrorNotConnectedToInternet || error.code == NSURLErrorDataNotAllowed {
-                        continuation.resume(throwing: BSNetworkError.collectionLost)
+                        return continuation.resume(throwing: BSNetworkError.collectionLost)
                     } else {
-                        continuation.resume(throwing: BSNetworkError.unknown(message: error.localizedDescription))
+                        return continuation.resume(throwing: BSNetworkError.unknown(message: error.localizedDescription))
                     }
                 }
                 
