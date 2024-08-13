@@ -20,68 +20,60 @@ public class BSApiClient {
     }
 
     public func fetch<T: Codable>(_ request: BSRequestable, session: URLSession = .shared) async throws -> BSResponse<T> {
-        try await withCheckedThrowingContinuation { continuation in
-            guard var urlRequest = mockMode ? request.mockModeURLRequest : request.urlRequst else {
-                return continuation.resume(throwing: BSNetworkError.invalidRequest)
+        guard var urlRequest = mockMode ? request.mockModeURLRequest : request.urlRequst else {
+            throw BSNetworkError.invalidRequest
+        }
+
+        urlRequest.timeoutInterval = TimeInterval(waitTime)
+
+        let (data, response) = try await session.data(for: urlRequest)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw BSNetworkError.invalidResponse
+        }
+
+        let statusCode = httpResponse.statusCode
+
+        switch statusCode {
+        case 200...299:
+            do {
+                var body: T? = nil
+
+                if !data.isEmpty {
+                    body = try self.decoder.decode(T.self, from: data)
+                }
+
+                return BSResponse(code: statusCode, body: body)
+            } catch {
+                throw BSNetworkError.parseError(error: error)
             }
-            
-            urlRequest.timeoutInterval = TimeInterval(waitTime)
-            
-            session.dataTask(with: urlRequest) { [weak self] data, response, error in
-                guard let self = self else { return }
-                if let error = error as NSError? {
-                    if error.domain == NSURLErrorDomain, error.code == NSURLErrorTimedOut {
-                        return continuation.resume(throwing: BSNetworkError.client(.requestTimeout, data: nil))
-                    } else if error.code == NSURLErrorNotConnectedToInternet || error.code == NSURLErrorDataNotAllowed {
-                        return continuation.resume(throwing: BSNetworkError.collectionLost)
-                    } else {
-                        return continuation.resume(throwing: BSNetworkError.unknown(message: error.localizedDescription))
-                    }
-                }
-                
-                guard let data = data, let response = response as? HTTPURLResponse else {
-                    return continuation.resume(throwing: BSNetworkError.invalidResponse)
-                }
 
-                let statusCode: Int = response.statusCode
-                switch response.statusCode {
-                case 200...299:
-                    do {
-                        var body: T? = nil
-
-                        if !data.isEmpty {
-                            body = try self.decoder.decode(T.self, from: data)
-                        }
-                        
-                        continuation.resume(returning: BSResponse(code: statusCode, body: body))
-                    } catch {
-                        continuation.resume(throwing: BSNetworkError.parseError(error: error))
-                    }
-                case 300...399:
-                    guard let transferError = BSNetworkError.TransferError(rawValue: statusCode) else {
-                        return continuation.resume(throwing: BSNetworkError.unknown(message: "\(statusCode)"))
-                    }
-
-                    return continuation.resume(throwing: BSNetworkError.transfer(transferError, data: data))
-                case 400...499:
-                    guard let clientError = BSNetworkError.ClientError(rawValue: statusCode) else {
-                        return continuation.resume(throwing: BSNetworkError.unknown(message: "\(statusCode)"))
-                    }
-                    
-                    return continuation.resume(throwing: BSNetworkError.client(clientError, data: data))
-                case 500...599:
-                    guard let serverError = BSNetworkError.ServerError(rawValue: statusCode) else {
-                        return continuation.resume(throwing: BSNetworkError.unknown(message: "\(statusCode)"))
-                    }
-                    
-                    return continuation.resume(throwing: BSNetworkError.server(serverError, data: data))
-                default:
-                    return continuation.resume(throwing: BSNetworkError.unknown(message: "\(statusCode)"))
-                }
+        case 300...399:
+            guard let transferError = BSNetworkError.TransferError(rawValue: statusCode) else {
+                throw BSNetworkError.unknown(message: "\(statusCode)")
             }
-            .resume()
+
+            throw BSNetworkError.transfer(transferError, data: data)
+
+        case 400...499:
+            guard let clientError = BSNetworkError.ClientError(rawValue: statusCode) else {
+                throw BSNetworkError.unknown(message: "\(statusCode)")
+            }
+
+            throw BSNetworkError.client(clientError, data: data)
+
+        case 500...599:
+            guard let serverError = BSNetworkError.ServerError(rawValue: statusCode) else {
+                throw BSNetworkError.unknown(message: "\(statusCode)")
+            }
+
+            throw BSNetworkError.server(serverError, data: data)
+
+        default:
+            throw BSNetworkError.unknown(message: "\(statusCode)")
         }
     }
+
     
     public func getFileSize(fileURL: URL) async throws -> Int {
         try await withCheckedThrowingContinuation { continuation in
