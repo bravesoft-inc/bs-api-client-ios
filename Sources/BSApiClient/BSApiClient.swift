@@ -73,17 +73,13 @@ public class BSApiClient {
             default:
                 throw BSNetworkError.unknown(message: "\(statusCode)")
             }
-        } catch {
-            if let nsError = error as NSError? {
-                switch nsError.code {
-                case NSURLErrorTimedOut:
-                    throw BSNetworkError.client(.requestTimeout, data: nil)
-                case NSURLErrorNotConnectedToInternet, NSURLErrorDataNotAllowed:
-                    throw BSNetworkError.collectionLost
-                default:
-                    throw BSNetworkError.unknown(message: nsError.localizedDescription)
-                }
-            } else {
+        } catch let error as NSError {
+            switch error.code {
+            case NSURLErrorTimedOut:
+                throw BSNetworkError.client(.requestTimeout, data: nil)
+            case NSURLErrorNotConnectedToInternet, NSURLErrorDataNotAllowed:
+                throw BSNetworkError.collectionLost
+            default:
                 throw BSNetworkError.unknown(message: error.localizedDescription)
             }
         }
