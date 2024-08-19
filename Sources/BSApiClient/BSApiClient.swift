@@ -26,53 +26,69 @@ public class BSApiClient {
 
         urlRequest.timeoutInterval = TimeInterval(waitTime)
 
-        let (data, response) = try await session.data(for: urlRequest)
+        do {
+            let (data, response) = try await session.data(for: urlRequest)
 
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw BSNetworkError.invalidResponse
-        }
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw BSNetworkError.invalidResponse
+            }
 
-        let statusCode = httpResponse.statusCode
+            let statusCode = httpResponse.statusCode
 
-        switch statusCode {
-        case 200...299:
-            do {
-                var body: T? = nil
+            switch statusCode {
+            case 200...299:
+                do {
+                    var body: T? = nil
 
-                if !data.isEmpty {
-                    body = try self.decoder.decode(T.self, from: data)
+                    if !data.isEmpty {
+                        body = try self.decoder.decode(T.self, from: data)
+                    }
+
+                    return BSResponse(code: statusCode, body: body)
+                } catch {
+                    throw BSNetworkError.parseError(error: error)
                 }
 
-                return BSResponse(code: statusCode, body: body)
-            } catch {
-                throw BSNetworkError.parseError(error: error)
-            }
+            case 300...399:
+                guard let transferError = BSNetworkError.TransferError(rawValue: statusCode) else {
+                    throw BSNetworkError.unknown(message: "\(statusCode)")
+                }
 
-        case 300...399:
-            guard let transferError = BSNetworkError.TransferError(rawValue: statusCode) else {
+                throw BSNetworkError.transfer(transferError, data: data)
+
+            case 400...499:
+                guard let clientError = BSNetworkError.ClientError(rawValue: statusCode) else {
+                    throw BSNetworkError.unknown(message: "\(statusCode)")
+                }
+
+                throw BSNetworkError.client(clientError, data: data)
+
+            case 500...599:
+                guard let serverError = BSNetworkError.ServerError(rawValue: statusCode) else {
+                    throw BSNetworkError.unknown(message: "\(statusCode)")
+                }
+
+                throw BSNetworkError.server(serverError, data: data)
+
+            default:
                 throw BSNetworkError.unknown(message: "\(statusCode)")
             }
-
-            throw BSNetworkError.transfer(transferError, data: data)
-
-        case 400...499:
-            guard let clientError = BSNetworkError.ClientError(rawValue: statusCode) else {
-                throw BSNetworkError.unknown(message: "\(statusCode)")
+        } catch {
+            if let nsError = error as NSError? {
+                switch nsError.code {
+                case NSURLErrorTimedOut:
+                    throw BSNetworkError.client(.requestTimeout, data: nil)
+                case NSURLErrorNotConnectedToInternet, NSURLErrorDataNotAllowed:
+                    throw BSNetworkError.collectionLost
+                default:
+                    throw BSNetworkError.unknown(message: nsError.localizedDescription)
+                }
+            } else {
+                throw BSNetworkError.unknown(message: error.localizedDescription)
             }
-
-            throw BSNetworkError.client(clientError, data: data)
-
-        case 500...599:
-            guard let serverError = BSNetworkError.ServerError(rawValue: statusCode) else {
-                throw BSNetworkError.unknown(message: "\(statusCode)")
-            }
-
-            throw BSNetworkError.server(serverError, data: data)
-
-        default:
-            throw BSNetworkError.unknown(message: "\(statusCode)")
         }
     }
+
 
     
     public func getFileSize(fileURL: URL) async throws -> Int {
