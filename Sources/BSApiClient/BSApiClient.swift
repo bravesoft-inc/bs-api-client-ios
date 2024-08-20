@@ -12,7 +12,7 @@ public class BSApiClient {
     private let decoder: JSONDecoder
     public let waitTime: Int
     public var mockMode: Bool
-    
+
     public init(decoder: JSONDecoder = .default, waitTime: Int = 20, isMockMode: Bool = false) {
         self.decoder = decoder
         self.waitTime = waitTime
@@ -55,6 +55,12 @@ public class BSApiClient {
 
             throw BSNetworkError.transfer(transferError, data: data)
 
+        case 401:
+            guard let serverError = BSNetworkError.ClientError(rawValue: statusCode) else {
+                throw BSNetworkError.unknown(message: "\(statusCode)")
+            }
+            throw BSNetworkError.client(.unauthorized, data: data)
+
         case 400...499:
             guard let clientError = BSNetworkError.ClientError(rawValue: statusCode) else {
                 throw BSNetworkError.unknown(message: "\(statusCode)")
@@ -74,7 +80,6 @@ public class BSApiClient {
         }
     }
 
-    
     public func getFileSize(fileURL: URL) async throws -> Int {
         try await withCheckedThrowingContinuation { continuation in
             var request = URLRequest(
@@ -83,13 +88,13 @@ public class BSApiClient {
                 timeoutInterval: TimeInterval(waitTime)
             )
             request.httpMethod = BSRequestMethod.head.rawValue
-            
+
             URLSession.shared.dataTask(with: request) { _, response, error in
                 if let error = error {
                     print("[BSApiClient] \(error.localizedDescription)")
                     return continuation.resume(throwing: error)
                 }
-                
+
                 guard let response = response else {
                     print("[BSApiClient] invalid response.")
                     return continuation.resume(throwing: BSNetworkError.invalidResponse)
